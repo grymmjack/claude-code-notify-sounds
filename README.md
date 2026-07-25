@@ -17,12 +17,12 @@ of the same clip every single time.
 
 [▶ Watch the demo](docs/claudecraft.mp4) — a Claude Code session narrated entirely in grumpy RTS units.
 
-<video src="https://raw.githubusercontent.com/grymmjack/claude-code-notify-sounds/main/docs/claudecraft.mp4" controls width="360"></video>
+<video src="https://raw.githubusercontent.com/grymmjack/claude-code-notify-sounds/refs/heads/master/docs/claudecraft.mp4" controls width="360"></video>
 
-> The inline `<video>` plays once the repo is pushed to `github.com/grymmjack/…`
-> (adjust the username/branch in the URL if yours differ). If it doesn't render,
-> GitHub's most reliable route is to drag `docs/claudecraft.mp4` into the README
-> on github.com and paste the `user-attachments` URL it generates.
+> The inline `<video>` plays once the repo is pushed. If your browser or GitHub
+> doesn't render it, use the [▶ Watch the demo](docs/claudecraft.mp4) link above,
+> or drag `docs/claudecraft.mp4` into the README on github.com to get a
+> `user-attachments` URL.
 
 ## What it does
 
