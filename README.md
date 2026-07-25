@@ -15,14 +15,24 @@ of the same clip every single time.
 
 ## Demo
 
-[▶ Watch the demo](docs/claudecraft.mp4) — a Claude Code session narrated entirely in grumpy RTS units.
+A Claude Code session narrated entirely in grumpy RTS units. **Click to play** (GitHub opens its built-in video viewer):
 
-<video src="https://raw.githubusercontent.com/grymmjack/claude-code-notify-sounds/refs/heads/master/docs/claudecraft.mp4" controls width="360"></video>
+<a href="https://github.com/grymmjack/claude-code-notify-sounds/blob/master/docs/claudecraft.mp4">
+  <img src="docs/demo-poster.jpg" alt="▶ Watch the demo (71s, with sound)" width="300">
+</a>
 
-> The inline `<video>` plays once the repo is pushed. If your browser or GitHub
-> doesn't render it, use the [▶ Watch the demo](docs/claudecraft.mp4) link above,
-> or drag `docs/claudecraft.mp4` into the README on github.com to get a
-> `user-attachments` URL.
+<details>
+<summary>Want it to play <em>inline</em> in the README?</summary>
+
+GitHub won't play `<video>` tags or `raw.githubusercontent.com` URLs in rendered
+Markdown (Content Security Policy) — videos play inline only when hosted on
+GitHub's own attachments CDN. To get a true inline player:
+
+1. Edit this README on **github.com** (or open a new draft issue).
+2. **Drag `docs/claudecraft.mp4` into the text box** and wait for the upload.
+3. GitHub inserts a `https://github.com/user-attachments/assets/…` URL — *that*
+   URL plays inline. Paste it here (you can drop the thumbnail above).
+</details>
 
 ## What it does
 
