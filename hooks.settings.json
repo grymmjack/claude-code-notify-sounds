@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "Notification": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "__NOTIFY_SH__ notification" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "__NOTIFY_SH__ stop" } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "__NOTIFY_SH__ stopfail" } ] }
+    ],
+    "PermissionDenied": [
+      { "hooks": [ { "type": "command", "command": "__NOTIFY_SH__ denied" } ] }
+    ],
+    "SessionStart": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "__NOTIFY_SH__ start" } ] }
+    ]
+  }
+}

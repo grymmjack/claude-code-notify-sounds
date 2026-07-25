@@ -1,0 +1,5 @@
+# round-robin cycle state (regenerated at runtime)
+sounds/.rr/
+
+# OS cruft
+.DS_Store
