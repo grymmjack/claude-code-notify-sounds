@@ -17,22 +17,7 @@ of the same clip every single time.
 
 A Claude Code session narrated entirely in grumpy RTS units. **Click to play** (GitHub opens its built-in video viewer):
 
-<a href="https://github.com/grymmjack/claude-code-notify-sounds/blob/master/docs/claudecraft.mp4">
-  <img src="docs/demo-poster.jpg" alt="▶ Watch the demo (71s, with sound)" width="300">
-</a>
-
-<details>
-<summary>Want it to play <em>inline</em> in the README?</summary>
-
-GitHub won't play `<video>` tags or `raw.githubusercontent.com` URLs in rendered
-Markdown (Content Security Policy) — videos play inline only when hosted on
-GitHub's own attachments CDN. To get a true inline player:
-
-1. Edit this README on **github.com** (or open a new draft issue).
-2. **Drag `docs/claudecraft.mp4` into the text box** and wait for the upload.
-3. GitHub inserts a `https://github.com/user-attachments/assets/…` URL — *that*
-   URL plays inline. Paste it here (you can drop the thumbnail above).
-</details>
+https://github.com/user-attachments/assets/0662c765-f5f0-49a0-96b3-2c3026041286
 
 ## What it does
 
