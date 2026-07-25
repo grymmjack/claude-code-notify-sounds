@@ -13,6 +13,17 @@ of the same clip every single time.
 > event folders and you're off. (It was built around classic RTS unit voices,
 > which are copyrighted game rips and therefore *not* included — see [Sounds](#sounds).)
 
+## Demo
+
+[▶ Watch the demo](docs/claudecraft.mp4) — a Claude Code session narrated entirely in grumpy RTS units.
+
+<video src="https://raw.githubusercontent.com/grymmjack/claude-code-notify-sounds/main/docs/claudecraft.mp4" controls width="360"></video>
+
+> The inline `<video>` plays once the repo is pushed to `github.com/grymmjack/…`
+> (adjust the username/branch in the URL if yours differ). If it doesn't render,
+> GitHub's most reliable route is to drag `docs/claudecraft.mp4` into the README
+> on github.com and paste the `user-attachments` URL it generates.
+
 ## What it does
 
 | Claude Code event | Plays from | Fires when… |
@@ -103,14 +114,32 @@ setting in that file.
 
 ## Sounds
 
-None are included. Use whatever you like:
+**None are bundled** — the repo ships silent so it stays legally clean and works
+with any audio you like:
 
 - **Free / CC0:** your system's freedesktop theme
   (`/usr/share/sounds/freedesktop/stereo/*.oga`),
   [Kenney](https://kenney.nl/assets?q=audio) UI packs, [freesound.org](https://freesound.org).
-- **Game voices** (what inspired this) are fun but **copyrighted** — rip them only
-  from a copy you legally own, for personal use, and don't redistribute. That's
-  why this repo ships silent.
+- **Game voices** make it delightful but are **copyrighted** — use them only from a
+  copy you legally own, for personal use, and don't redistribute them.
+
+### Recreate the Warcraft II set (what the demo uses)
+
+The demo uses unit-voice clips from **Warcraft II** (© Blizzard Entertainment).
+They are **not** in this repo — download them yourself and drop them into the
+folders. Source used:
+<https://sounds.spriters-resource.com/ms_dos/warcraftii/asset/393991/>
+
+| Folder | Files |
+|---|---|
+| `sounds/needs/`  | `Oready.wav` · `Psready.wav` · `Pnready.wav` |
+| `sounds/ready/`  | `Owrkdone.wav` · `Pswrkdon.wav` · `Hwhat6.wav` |
+| `sounds/fail/`   | `Gopissd2.wav` · `Dwhat2.wav` · `Opissed2.wav` |
+| `sounds/denied/` | `Ompissd3.wav` · `Pspissd6.wav` · `Ogpissd1.wav` |
+| `sounds/start/`  | `Ogready.wav` · `Pkready.wav` · `Wzready.wav` |
+
+> These are Blizzard's assets; the table is just filenames. Download for personal
+> use only — don't commit them to a public fork.
 
 ## How it works
 
