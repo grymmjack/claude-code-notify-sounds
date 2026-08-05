@@ -14,6 +14,9 @@ sounds/
 
 - Formats: `.wav`, `.ogg`, `.oga`, `.flac`. (`.mp3` won't play on the
   libsndfile-based players like `pw-play`/`paplay` — convert to `.wav`/`.ogg`.)
+  **`.wav` is the only format that plays on all three platforms** — on Windows
+  without `ffplay`, the built-in `Media.SoundPlayer` handles `.wav` and nothing
+  else. Use `.wav` if you sync your sound set across machines.
 - Put **as many files as you like** in a folder; they rotate. One file = it
   plays every time. **Empty folder = silent** for that event.
 - Reset a folder's rotation by deleting its counter in `sounds/.rr/`.

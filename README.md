@@ -37,11 +37,33 @@ another window.
 
 - **Claude Code** (the CLI).
 - **`jq`** — reads the event payload.
-- A **desktop-notification** command: `notify-send` (Linux, from `libnotify-bin`).
-  macOS falls back to `osascript`.
-- A **sound player** — the first of these that's installed is used:
-  `pw-play` (PipeWire) · `paplay` (PulseAudio) · `ffplay` · `aplay` · `afplay` (macOS).
-- Built and tested on KDE Plasma / Wayland + PipeWire; works on most Linux desktops.
+- **`bash`** — on Windows that means git-bash / MSYS2, which Claude Code uses to
+  run hooks anyway.
+
+### Platform support
+
+`notify.sh` detects the OS from `uname -s` and prefers each platform's **native**
+backend, falling back to the generic chain if it isn't there. Nothing to
+configure — the same script works everywhere.
+
+| | Notification | Sound |
+|---|---|---|
+| **Linux** | `notify-send` (from `libnotify-bin`) | `pw-play` (PipeWire) → `paplay` (PulseAudio) → `ffplay` → `aplay` |
+| **macOS** | `osascript` | `afplay` |
+| **Windows** | [BurntToast](https://github.com/Windos/BurntToast) if installed, else a tray balloon tip | `ffplay` if installed, else `Media.SoundPlayer` (**`.wav` only**) |
+
+Every backend is probed with `command -v` before use, so a missing tool means
+*silence*, never an error. Built and tested on KDE Plasma / Wayland + PipeWire
+and on macOS; the Windows path runs under git-bash.
+
+Platform notes:
+
+- **macOS** — the first toast needs your terminal app granted permission in
+  **System Settings → Notifications**, or it silently shows nothing.
+- **Windows** — `Media.SoundPlayer` plays `.wav` only and has no volume control,
+  so `CLAUDE_NOTIFY_VOLUME` is ignored on that path. Install `ffmpeg` (for
+  `ffplay`) if you want `.ogg`/`.flac` and working volume. `Install-Module
+  BurntToast` gets you real toasts instead of the balloon-tip fallback.
 
 ## Install
 
@@ -100,7 +122,20 @@ notification daemon — but fixing ownership restores your desktop's native toas
 **Toasts show but no sound:** confirm a player exists
 (`command -v pw-play paplay ffplay aplay afplay`) and that the file plays directly
 (`pw-play sounds/ready/yourfile.wav`). `.mp3` isn't supported by the libsndfile
-players — use `.wav`/`.ogg`.
+players — use `.wav`/`.ogg`. On Windows without `ffplay`, only `.wav` will play.
+
+**Nothing at all happens:** run it by hand with the debug flag — it prints the
+detected platform and the clip it picked, then exits 0 regardless:
+```bash
+echo '{"cwd":"'"$PWD"'"}' | NOTIFY_DEBUG=1 ./notify.sh stop
+# notify.sh os=mac     stop      -> Owrkdone.wav
+```
+`os=unknown` means `uname -s` wasn't recognized and only the generic chain will be
+tried. `-> none` means the folder for that event has no playable files in it.
+
+**macOS shows no toast:** grant your terminal app (Terminal, iTerm, Ghostty, …)
+permission under **System Settings → Notifications**. `osascript` fails silently
+without it.
 
 **Hook doesn't fire:** newly-added hook *events* sometimes need a config reload —
 open `/hooks` once or restart. Validate your settings
@@ -140,9 +175,14 @@ folders. Source used:
 
 `notify.sh <event>` reads the hook's JSON payload on stdin, maps the event to a
 `sounds/<folder>`, picks the next file round-robin (a counter in `sounds/.rr/`),
-shows a `notify-send` toast (with the daemon's own sound *suppressed* to avoid a
-double chime), and plays the file **detached** so the hook returns instantly.
-That's the whole trick.
+shows a toast via the platform's native notifier (on Linux, `notify-send` with the
+daemon's own sound *suppressed* to avoid a double chime), and plays the file
+**detached** so the hook returns instantly. That's the whole trick.
+
+It always exits **0**. That matters: `notify.sh` runs on the `Stop` event, where a
+nonzero status is reported as a hook failure — and where an exit status of `2`
+specifically means *"don't end the turn."* So a missing player, a silent folder, or
+an unrecognized OS can never turn a cosmetic notification into a broken session.
 
 ## License
 
