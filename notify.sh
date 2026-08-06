@@ -381,6 +381,24 @@ if [ -n "${NOTIFY_DEBUG:-}" ] && [ "$OS" = mac ]; then
   printf 'notify.sh activate=%s (via %s) notifier=%s\n' \
     "$(mac_activate_target || echo '<none>')" "$dbg_src" \
     "$(command -v terminal-notifier >/dev/null 2>&1 && echo terminal-notifier || echo 'osascript (click opens Script Editor)')" >&2
+elif [ -n "${NOTIFY_DEBUG:-}" ] && { [ "$OS" = linux ] || [ "$OS" = windows ]; }; then
+  # Everything the click path depends on, in one line — otherwise diagnosing "the
+  # click did nothing" means guessing which of four things was missing.
+  dbg_tool="none"
+  for t in wmctrl xdotool kdotool; do
+    command -v "$t" >/dev/null 2>&1 && { dbg_tool="$t"; break; }
+  done
+  if [ "$OS" = linux ]; then
+    notify-send --help 2>&1 | grep -qi -- '--action' && dbg_act="yes" || dbg_act="NO (plain notification)"
+    printf 'notify.sh click: --action=%s wm-tool=%s class=%s pids=%s%s\n' \
+      "$dbg_act" "$dbg_tool" "$(host_app_name || echo '<none>')" "$(ancestor_pids)" \
+      "${CLAUDE_NOTIFY_NO_CLICK:+ [DISABLED via CLAUDE_NOTIFY_NO_CLICK]}" >&2
+  else
+    printf 'notify.sh click: focus-target=%s burnttoast=%s%s\n' \
+      "$(host_app_name || echo '<none>')" \
+      "$([ -n "${CLAUDE_NOTIFY_NO_BURNTTOAST:-}" ] && echo forced-off || echo auto)" \
+      "${CLAUDE_NOTIFY_NO_CLICK:+ [DISABLED via CLAUDE_NOTIFY_NO_CLICK]}" >&2
+  fi
 fi
 
 show_toast "$title" "$body" "$icon" "$urgency" "ccns-$proj"
