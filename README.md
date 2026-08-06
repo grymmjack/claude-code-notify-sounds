@@ -49,7 +49,7 @@ configure — the same script works everywhere.
 | | Notification | Sound |
 |---|---|---|
 | **Linux** | `notify-send` (from `libnotify-bin`) | `pw-play` (PipeWire) → `paplay` (PulseAudio) → `ffplay` → `aplay` |
-| **macOS** | `osascript` | `afplay` |
+| **macOS** | `terminal-notifier` if installed, else `osascript` | `afplay` |
 | **Windows** | [BurntToast](https://github.com/Windos/BurntToast) if installed, else a tray balloon tip | `ffplay` if installed, else `Media.SoundPlayer` (**`.wav` only**) |
 
 Every backend is probed with `command -v` before use, so a missing tool means
@@ -60,6 +60,27 @@ Platform notes:
 
 - **macOS** — the first toast needs your terminal app granted permission in
   **System Settings → Notifications**, or it silently shows nothing.
+- **macOS: clicking the notification.** With plain `osascript`, macOS attributes
+  the notification to **Script Editor** — so clicking it opens Script Editor,
+  which is useless. `osascript` cannot set a click target (`display notification`
+  comes from StandardAdditions, which loads into osascript's own process, and
+  `tell application "X" to display notification` needs X to be
+  AppleScript-scriptable — VS Code and the Claude desktop app both ship no
+  `.sdef`). Fix it with:
+  ```bash
+  brew install terminal-notifier
+  ```
+  Then clicking a notification focuses **the app the session is running in** —
+  Claude desktop, VS Code, iTerm, whatever launched it — detected from
+  `__CFBundleIdentifier`, falling back to walking the process ancestry for the
+  enclosing `.app`. Pin it to one app with
+  `CLAUDE_NOTIFY_ACTIVATE=com.microsoft.VSCode`.
+
+  This uses terminal-notifier's `-activate`, not `-sender`. `-sender` would also
+  borrow the app's icon and name, but it **hangs forever for some bundle ids**
+  (reproducible with the Claude desktop app, even after granting notification
+  permission) — not worth a leaked process on every turn for a nicer icon. The
+  cost of `-activate` is cosmetic: the toast shows terminal-notifier's icon.
 - **Windows** — `Media.SoundPlayer` plays `.wav` only and has no volume control,
   so `CLAUDE_NOTIFY_VOLUME` is ignored on that path. Install `ffmpeg` (for
   `ffplay`) if you want `.ogg`/`.flac` and working volume. `Install-Module

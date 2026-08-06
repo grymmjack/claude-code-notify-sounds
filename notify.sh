@@ -97,11 +97,69 @@ play_detached() {   # play $1 at volume $2 via the best available player
   return 0
 }
 
+# Which app should clicking a macOS notification bring to the front?
+#
+# THE PROBLEM: `osascript -e 'display notification'` is posted BY osascript, so
+# macOS attributes it to Script Editor — and clicking the notification opens
+# Script Editor rather than the app you were working in. osascript cannot set a
+# click target: `display notification` comes from StandardAdditions, which loads
+# into osascript's own process, and `tell application "X" to display
+# notification` does not help because X must be AppleScript-scriptable (neither
+# VS Code nor the Claude desktop app ships a .sdef). terminal-notifier's
+# -activate flag is the only reliable fix. Install it with:
+#   brew install terminal-notifier
+#
+# Resolution order: explicit override -> the bundle id the host app exports in
+# __CFBundleIdentifier -> climb the process ancestry for the enclosing .app.
+mac_activate_target() {
+  if [ -n "${CLAUDE_NOTIFY_ACTIVATE:-}" ]; then printf '%s' "$CLAUDE_NOTIFY_ACTIVATE"; return 0; fi
+  if [ -n "${__CFBundleIdentifier:-}" ]; then printf '%s' "$__CFBundleIdentifier"; return 0; fi
+
+  # Keep the LAST (outermost) .app found while climbing: inner matches are helper
+  # bundles, the outermost one is the real GUI host.
+  local pid=$$ i=0 ppid comm app bid found=""
+  while [ "$i" -lt 12 ]; do
+    ppid=""; comm=""
+    read -r ppid comm <<< "$(ps -o ppid=,comm= -p "$pid" 2>/dev/null | sed 's/^ *//')"
+    [ -n "$comm" ] || break
+    case "$comm" in
+      *.app/Contents/*)
+        app="${comm%%.app/Contents/*}.app"
+        bid="$(defaults read "$app/Contents/Info" CFBundleIdentifier 2>/dev/null)"
+        [ -n "$bid" ] && found="$bid"
+        ;;
+    esac
+    [ -n "$ppid" ] || break
+    [ "$ppid" = "1" ] && break
+    pid="$ppid"; i=$((i+1))
+  done
+  [ -n "$found" ] && { printf '%s' "$found"; return 0; }
+  return 1
+}
+
 show_toast() {   # $1 title  $2 body  $3 icon  $4 urgency  $5 dedup-tag
   case "$OS" in
     mac)
+      # Preferred: terminal-notifier, so a click focuses the app the session
+      # came from instead of Script Editor.
+      #
+      # -activate, NOT -sender. -sender would also show the app's own icon and
+      # name, but it HANGS FOREVER for some bundle ids (reproducible for the
+      # Claude desktop app, even with notification permission granted). This
+      # runs on every turn, so a leaked process per notification is not worth a
+      # prettier icon. spawn() detaches it anyway, belt and braces.
+      if command -v terminal-notifier >/dev/null 2>&1; then
+        local target; target="$(mac_activate_target || true)"
+        if [ -n "$target" ]; then
+          spawn terminal-notifier -title "$1" -message "$2" -group "$5" -activate "$target"
+        else
+          spawn terminal-notifier -title "$1" -message "$2" -group "$5"
+        fi
+        return 0
+      fi
       if command -v osascript >/dev/null 2>&1; then
-        # The terminal app needs Notification permission granted in
+        # Fallback: works, but a click opens Script Editor (see above) and the
+        # terminal app needs Notification permission granted in
         # System Settings > Notifications, or this silently shows nothing.
         osascript -e "display notification \"$(as_escape "$2")\" with title \"$(as_escape "$1")\"" \
           >/dev/null 2>&1 || true
@@ -183,6 +241,16 @@ fi
 # NOTIFY_DEBUG=1 prints the platform + selection to stderr (handy for testing).
 [ -n "${NOTIFY_DEBUG:-}" ] && printf 'notify.sh os=%-7s %-9s -> %s\n' \
   "$OS" "$event" "$(basename "${sound:-none}")" >&2
+# On macOS also report which app a click will focus and how that was decided —
+# otherwise it is invisible until you click one and land somewhere unexpected.
+if [ -n "${NOTIFY_DEBUG:-}" ] && [ "$OS" = mac ]; then
+  if   [ -n "${CLAUDE_NOTIFY_ACTIVATE:-}" ]; then dbg_src="CLAUDE_NOTIFY_ACTIVATE"
+  elif [ -n "${__CFBundleIdentifier:-}" ];    then dbg_src="__CFBundleIdentifier"
+  else dbg_src="process-ancestry"; fi
+  printf 'notify.sh activate=%s (via %s) notifier=%s\n' \
+    "$(mac_activate_target || echo '<none>')" "$dbg_src" \
+    "$(command -v terminal-notifier >/dev/null 2>&1 && echo terminal-notifier || echo 'osascript (click opens Script Editor)')" >&2
+fi
 
 show_toast "$title" "$body" "$icon" "$urgency" "ccns-$proj"
 [ -n "$sound" ] && play_detached "$sound" "$VOL"
