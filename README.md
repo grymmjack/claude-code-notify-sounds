@@ -46,11 +46,11 @@ another window.
 backend, falling back to the generic chain if it isn't there. Nothing to
 configure — the same script works everywhere.
 
-| | Notification | Sound |
-|---|---|---|
-| **Linux** | `notify-send` (from `libnotify-bin`) | `pw-play` (PipeWire) → `paplay` (PulseAudio) → `ffplay` → `aplay` |
-| **macOS** | `terminal-notifier` if installed, else `osascript` | `afplay` |
-| **Windows** | [BurntToast](https://github.com/Windos/BurntToast) if installed, else a tray balloon tip | `ffplay` if installed, else `Media.SoundPlayer` (**`.wav` only**) |
+| | Notification | Sound | Click focuses the session's app |
+|---|---|---|---|
+| **Linux** | `notify-send` (from `libnotify-bin`) | `pw-play` (PipeWire) → `paplay` (PulseAudio) → `ffplay` → `aplay` | with `--action` support + `wmctrl`/`xdotool`/`kdotool` |
+| **macOS** | `terminal-notifier` if installed, else `osascript` | `afplay` | with `terminal-notifier` |
+| **Windows** | [BurntToast](https://github.com/Windos/BurntToast) if installed, else a tray balloon tip | `ffplay` if installed, else `Media.SoundPlayer` (**`.wav` only**) | balloon-tip path only |
 
 Every backend is probed with `command -v` before use, so a missing tool means
 *silence*, never an error. Built and tested on KDE Plasma / Wayland + PipeWire
@@ -81,6 +81,36 @@ Platform notes:
   (reproducible with the Claude desktop app, even after granting notification
   permission) — not worth a leaked process on every turn for a nicer icon. The
   cost of `-activate` is cosmetic: the toast shows terminal-notifier's icon.
+
+- **Linux: clicking the notification.** If your `notify-send` supports
+  `--action` (libnotify 0.7.7+), the hook registers the freedesktop spec's
+  `default` action — the one invoked by clicking the notification body — and
+  raises the session's window when it fires. You also need a window tool:
+  ```bash
+  sudo apt install wmctrl xdotool     # X11 / XWayland
+  ```
+  Matching is by **PID** first (`wmctrl -lp`, then `xdotool search --pid`), which
+  is exact, falling back to window class. On **KDE Plasma under Wayland** X11
+  tools cannot see native Wayland windows at all — install
+  [`kdotool`](https://github.com/jinliu/kdotool), which drives KWin's scripting
+  API, and the hook will use it automatically.
+
+  Note that `notify-send --action` **blocks** until the notification is clicked or
+  expires, so the call is detached and bounded by
+  `CLAUDE_NOTIFY_CLICK_TIMEOUT_MS` (default 12000). Without `--action` support or
+  a window tool, you get exactly the previous behavior — a plain notification.
+
+- **Windows: clicking the notification.** The tray-balloon path attaches a
+  `BalloonTipClicked` handler that calls `WScript.Shell`'s `AppActivate`. A
+  **BurntToast** toast routes its click to the AppId that posted it, which would
+  require registering a shortcut with an AppUserModelID — out of scope — so
+  BurntToast toasts stay cosmetic on click. Set
+  `CLAUDE_NOTIFY_NO_BURNTTOAST=1` to force the balloon path and get
+  click-to-focus. Detection of the host app also depends on MSYS `ps` supporting
+  `-o comm=`; where it doesn't, click-to-focus is skipped harmlessly.
+
+- **Opting out:** `CLAUDE_NOTIFY_NO_CLICK=1` disables all click handling on every
+  platform and restores the plain-notification behavior.
 - **Windows** — `Media.SoundPlayer` plays `.wav` only and has no volume control,
   so `CLAUDE_NOTIFY_VOLUME` is ignored on that path. Install `ffmpeg` (for
   `ffplay`) if you want `.ogg`/`.flac` and working volume. `Install-Module
