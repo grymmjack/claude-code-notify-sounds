@@ -147,6 +147,15 @@ NOTIFY_DEBUG=1 echo '{}' | ./notify.sh stopfail     # prints which clip it picke
 ## Customize
 
 - **Volume:** `VOL` at the top of `notify.sh` (`0.0`–`1.0`), or set `CLAUDE_NOTIFY_VOLUME`.
+- **Volume channel (Linux):** on PipeWire / PulseAudio the sounds are tagged with
+  the **`Notification`** media role, so they land on your desktop's dedicated
+  **Notification Sounds** volume slider (KDE Plasma, GNOME, …) instead of generic
+  playback. That slider is the master and `CLAUDE_NOTIFY_VOLUME` stacks on top as a
+  per-file gain (final ≈ `CLAUDE_NOTIFY_VOLUME` × slider), so turning notifications
+  down system-wide turns Claude's cues down with them. Set `CLAUDE_NOTIFY_ROLE=`
+  (empty) to opt out and play on the generic channel like before, or to another
+  role name to retarget. Only `pw-play` and `paplay` carry the tag — the
+  `ffplay`/`aplay` fallbacks always play on the generic channel.
 - **Sound location:** set `CLAUDE_NOTIFY_SOUNDS` to point the folders elsewhere.
 - **Add / remove events:** each hook is one line in your settings — delete the ones
   you don't want.
@@ -174,6 +183,17 @@ notification daemon — but fixing ownership restores your desktop's native toas
 (`command -v pw-play paplay ffplay aplay afplay`) and that the file plays directly
 (`pw-play sounds/ready/yourfile.wav`). `.mp3` isn't supported by the libsndfile
 players — use `.wav`/`.ogg`. On Windows without `ffplay`, only `.wav` will play.
+
+**Sounds ignore my Notification Sounds slider (Linux):** the `Notification` media
+role is applied only on the `pw-play` and `paplay` backends. Confirm the tag landed
+while a sound is playing:
+```bash
+echo '{"cwd":"'"$PWD"'"}' | ./notify.sh stop &
+sleep 0.2; pactl list sink-inputs | grep -iE 'media.role|application.name'
+```
+You want to see `media.role = "event"`. If no role shows, you're falling through to
+`ffplay`/`aplay` (which can't be tagged) — install PipeWire's `pw-play` or
+PulseAudio's `paplay`. Set `CLAUDE_NOTIFY_ROLE=` (empty) to disable the tag entirely.
 
 **Nothing at all happens:** run it by hand with the debug flag — it prints the
 detected platform and the clip it picked, then exits 0 regardless:

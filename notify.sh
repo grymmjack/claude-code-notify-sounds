@@ -34,6 +34,16 @@ SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 SNDDIR="${CLAUDE_NOTIFY_SOUNDS:-$SELF_DIR/sounds}"   # override with an env var
 VOL="${CLAUDE_NOTIFY_VOLUME:-0.35}"                  # 0.0 (silent) .. 1.0 (full)
+# Media-role tag for the audio stream (Linux PipeWire / PulseAudio only). Filing a
+# sound under the "Notification" role makes the desktop route it to its dedicated
+# Notification Sounds volume channel — the slider in KDE Plasma's / GNOME's audio
+# settings — which carries a persistent per-role level. That slider then scales
+# every cue and VOL above stacks on top as a per-file gain, so turning
+# notifications down system-wide turns these down with them. Set empty to opt out
+# and play on the generic channel like before.
+# NOTE: colon-less default on purpose — CLAUDE_NOTIFY_ROLE= (explicitly empty) must
+# opt out, so only an UNSET var gets the Notification default. Don't "fix" to `:-`.
+ROLE="${CLAUDE_NOTIFY_ROLE-Notification}"
 APPNAME="Claude Code"
 # How long the Linux click-to-focus watcher waits for a click before giving up.
 # It exists only on that path, where notify-send blocks until the notification is
@@ -92,8 +102,17 @@ play_detached() {   # play $1 at volume $2 via the best available player
   esac
 
   # Generic chain — first class on Linux, and the fallback everywhere else.
-  if   command -v pw-play >/dev/null 2>&1; then spawn pw-play --volume "$vol" "$f"
-  elif command -v paplay  >/dev/null 2>&1; then spawn paplay --volume "$(vol_pa "$vol")" "$f"
+  #
+  # $ROLE (default "Notification") files the stream under the desktop's dedicated
+  # Notification Sounds volume channel, so its slider scales every cue while $vol
+  # rides on top as a per-file gain. Only PipeWire and PulseAudio carry a role,
+  # and each names it differently: pw-play takes the PipeWire role in $ROLE;
+  # paplay takes PulseAudio's notification role, "event", which pipewire-pulse
+  # maps back to Notification. ffplay/aplay have no role concept, so they stay on
+  # the generic channel — that slider can't reach a sound that falls through to
+  # them. An empty $ROLE drops the tag and restores the previous behavior.
+  if   command -v pw-play >/dev/null 2>&1; then spawn pw-play ${ROLE:+--media-role="$ROLE"} --volume "$vol" "$f"
+  elif command -v paplay  >/dev/null 2>&1; then spawn paplay ${ROLE:+--property=media.role=event} --volume "$(vol_pa "$vol")" "$f"
   elif command -v ffplay  >/dev/null 2>&1; then spawn ffplay -nodisp -autoexit -loglevel quiet -volume "$(vol_pct "$vol")" "$f"
   elif command -v afplay  >/dev/null 2>&1; then spawn afplay -v "$vol" "$f"
   elif command -v aplay   >/dev/null 2>&1; then spawn aplay -q "$f"          # no volume control
